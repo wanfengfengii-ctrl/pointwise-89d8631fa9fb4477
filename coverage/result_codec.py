@@ -43,6 +43,8 @@ def pack(value):
         return {k: pack(v) for k, v in value.items()}
     if isinstance(value, (tuple, list)):
         return [pack(v) for v in value]
+    if type(value) is bool:
+        raise ValueError('unsupported report value')
     if type(value) in (str, int):
         return value
     raise ValueError('unsupported report value')
@@ -55,13 +57,22 @@ def unpack(value):
         return {k: unpack(v) for k, v in value.items()}
     if isinstance(value, list):
         return [unpack(v) for v in value]
+    if type(value) is bool:
+        raise ValueError('unsupported report value')
     if type(value) in (str, int):
         return value
     raise ValueError('unsupported JSON value')
 
 def validate_report_structure(report):
-    require_keys(report, ('format', 'report_id', 'batch_id', 'binding', 'inputs', 'components', 'measurements', 'receipt'))
-    if type(report['format']) is not int or report['format'] != REPORT_FORMAT_VERSION:
+    if not isinstance(report, dict) or 'format' not in report:
+        raise ValueError('invalid report object')
+    format_value = report['format']
+    if format_value == 2:
+        from .periodic_codec import validate_periodic_report_structure
+        return validate_periodic_report_structure(report)
+    require_keys(report, ('format', 'report_id', 'batch_id', 'binding', 'inputs',
+                          'components', 'measurements', 'receipt'))
+    if format_value != REPORT_FORMAT_VERSION:
         raise ValueError('unsupported report format')
     identifier(report['report_id'])
     identifier(report['batch_id'])

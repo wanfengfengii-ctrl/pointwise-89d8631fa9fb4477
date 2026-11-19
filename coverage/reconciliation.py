@@ -43,6 +43,9 @@ def verify_measurement_items(report, geometry):
         raise ValueError('measurement reconciliation failed')
 
 def reconcile_report(report):
+    if isinstance(report, dict) and report.get('format') == 2:
+        from .periodic_reconciliation import reconcile_periodic_report
+        return reconcile_periodic_report(report)
     from .result_codec import validate_report_structure
     geometry = validate_report_structure(report)
     verify_measurement_items(report, geometry)

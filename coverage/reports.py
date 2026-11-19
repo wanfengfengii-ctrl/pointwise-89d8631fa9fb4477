@@ -3,7 +3,7 @@ from .batches import read_sealed_batch
 from .coverage_union import build_coverage, geometry_data
 from .areas import area_items, coverage_area
 from .boundary_measure import boundary_measurements
-from .publication import publication_binding, publish_report
+from .publication import publication_binding, publication_kind, publish_report
 from .database import current_archive
 from .reconciliation import reconcile_report
 
@@ -28,6 +28,9 @@ def build_report(report_id, batch_id):
     previous = publication_binding(report_id)
     if previous is not None:
         if previous != batch_id:
+            raise ValueError('report identity is already bound')
+        kind = publication_kind(report_id)
+        if kind is None or kind[0] != 1:
             raise ValueError('report identity is already bound')
         return read_report(report_id)
     current_archive().checkpoint('report.before_compute')

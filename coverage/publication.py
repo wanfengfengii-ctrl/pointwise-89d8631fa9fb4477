@@ -1,5 +1,5 @@
 from .database import current_archive
-from .result_codec import encode_report
+from .result_codec import encode_report, parse_json
 
 def load_publication(report_id):
     connection = current_archive().connection
@@ -16,6 +16,25 @@ def publication_binding(report_id):
         return load_publication(report_id)[0]
     except KeyError:
         return None
+
+def publication_kind(report_id):
+    """Return (format, batch_id, period or None) for a saved report, else None."""
+    try:
+        _, payload, _ = load_publication(report_id)
+    except KeyError:
+        return None
+    raw = parse_json(payload)
+    format_value = raw.get('format')
+    period = raw.get('period')
+    if format_value == 2:
+        if not isinstance(period, dict) or 'q' not in period:
+            raise ValueError('stored periodic report missing period')
+        from .result_codec import decode_fraction
+        period_value = decode_fraction(period['q'])
+    else:
+        period_value = None
+    batch_id = raw.get('batch_id')
+    return format_value, batch_id, period_value
 
 def publish_report(report):
     payload = encode_report(report)
